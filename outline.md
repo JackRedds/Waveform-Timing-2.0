@@ -1,13 +1,13 @@
 - **data**
 	data from all codes is ouput here and most likely put into three catigories
-	- Original
-	- Dombeck
-	- Solitary
+	- Solitary Wave Data
+	- Wave Train Data
+	- Wave Train Finder
 
 - **scripts**
-	- Original
-	- Dombeck
-	- Solitary
+	- *Solitary_Waves.py*
+	- *Wave_Train.py*
+	- *Wave_Train_Finder.py*
 
 - **src/wave_timing**
 	- *calc.py*
