@@ -3,7 +3,13 @@ Updated Timing code
 
 ## To Do
 ### Jack:
-- [ ] TBD
+- [ ] write setup.py
+- [ ] write .gitignore file
+- [ ] write requirements.txt
+- [ ] write test codes
+- [ ] look into assert statements
+- [ ] plan out scripts
+- [ ] write leftover functions
 
 ### Petra
 - [ ] find_nearest
