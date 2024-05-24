@@ -3,13 +3,14 @@ Updated Timing code
 
 ## To Do
 ### Jack:
-- [ ] write setup.py
-- [ ] write .gitignore file
-- [ ] write requirements.txt
+- [x] write pyproject.toml
+- [ ] **write .gitignore file**
+- [x] write enviroment.yml
 - [ ] write test codes
 - [ ] look into assert statements
 - [ ] plan out scripts
 - [ ] write leftover functions
+- [x] write Makefile
 
 ### Petra
 - [ ] find_nearest
@@ -18,3 +19,10 @@ Updated Timing code
 - [ ] rotate_mag_fld
 - [ ] FirBandPass
 - [ ] filter_fir
+
+## Code Set-Up:
+To set up virtual enviroment and download wave-timing code along with dependencies simply run '$make install' if you have make installed on your computer if not run:
+```
+conda env create -f enviroment.yml
+conda run -n wave-timing poetry install
+```
