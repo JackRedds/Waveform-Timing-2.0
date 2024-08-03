@@ -25,7 +25,8 @@ Updated Timing code
 
 * Code Set-Up:
 To set up virtual enviroment and download wave-timing code along with dependencies simply run `$make install` if you have make installed on your computer if not run:
-```
+
+#+begin_src shell
 conda env create -f enviroment.yml
 conda run -n wave-timing poetry install
-```
+#+end_src
