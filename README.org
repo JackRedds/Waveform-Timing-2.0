@@ -2,17 +2,24 @@
 Updated Timing code
 
 * Wave-Timing Plan
-** TODO Jack [7/10]
+** TODO Jack [13/16]
 - [X] write pyproject.toml
 - [X] write .gitignore file
 - [X] write enviroment.yml
-- [ ] write test codes
-- [ ] look into assert statements
-- [ ] plan out scripts
+- [X] write test codes
+- [X] look into assert statements
+- [X] SW vel into Sun Frame
+- [ ] Translate Wave vel into plasma frame
+- [ ] Fix dot product
+- [ ] Wave Train Script
+- [ ] Solitary Wave Script
+- [ ] Wave Train Finder Script
 - [X] write leftover functions
 - [X] write Makefile
 - [X] fork pyspedas repo so data loc can be changed
 - [X] Look at wave train finder code
+- [X] Change test scripts to jupyter notebooks
+- [X] Assert types in functions
 
 ** TODO Petra [0/6]
 - [ ] find_nearest
@@ -24,7 +31,7 @@ Updated Timing code
 
 
 * Code Set-Up:
-To set up virtual enviroment and download wave-timing code along with dependencies simply run `$make install` if you have make installed on your computer if not run:
+To set up virtual environment and download wave-timing code along with dependencies simply run `$ make install` if you have make installed on your computer if not run:
 
 #+begin_src shell
 conda env create -f enviroment.yml

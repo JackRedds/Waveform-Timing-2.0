@@ -9,7 +9,6 @@ start_date = '2021-01-19'
 end_date = '2021-01-20'
 taps = 601
 cutoff = [100, 900]
-v1_vec = np.array([[1, 0]])
 
 data = wtu.get_data(start_date, end_date)
 dV1, dV2, dV3, dV4, __ = data.get_vac_data()
@@ -50,11 +49,9 @@ for date in dV1.columns:
     V_index = wtc.find_nearest(V_date, date)
 
     B_vec = B_vec_data.iloc[B_index]
-    B_vec = wtc.sc_to_v1234_coordinates(B_vec)
     B_mag = B_mag_data.iloc[B_index]
 
     V_vec = V_vec_data.iloc[V_index]
-    V_vec = wtc.sc_to_v1234_coordinates(V_vec)
     V_mag = V_mag_data.iloc[V_index]
 
     single_freq_times = wtu.frequency_filter(dv1, dv2, dv3, dv4, time) * dt
@@ -89,9 +86,62 @@ for date in dV1.columns:
     v12_delay_troughs_pos = np.array(v12_delay_troughs_pos)
     v34_delay_troughs_pos = np.array(v34_delay_troughs_pos)
 
-    wave_vel_peaks, k_vec_peaks = wtc.wave_velocity(v12_delay_peaks, v34_delay_peaks)
-    wave_vel_troughs, k_vec_troughs = wtc.wave_velocity(v12_delay_troughs, v34_delay_troughs)
+    wave_vel_peaks = wtc.wave_velocity(v12_delay_peaks, v34_delay_peaks)[0]
+    wave_vel_troughs = wtc.wave_velocity(v12_delay_troughs, v34_delay_troughs)[0]
 
-    theta_peaks = wtc.angle_between(k_vec_peaks, v1_vec)
-    theta_troughs = wtc.angle_between(k_vec_troughs, v1_vec)
-    exit()
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(v12_delay_peaks_pos, wave_vel_peaks, 'k.')
+    ax.axhline(np.mean(wave_vel_peaks), c='k')
+    ax.plot(v34_delay_troughs_pos, wave_vel_troughs, 'r.')
+    ax.axhline(np.mean(wave_vel_troughs), c='r')
+    plt.show()
+
+    # Ignore Zero Cossings for now
+    #d_single_frequency_times = wtu.frequency_filter(d_dv1, d_dv2, d_dv3, d_dv4, time) * dt
+    #d_delays = wtc.multiple_delay(d_dv1, d_dv2, d_dv3, d_dv4, time)
+
+    #d_v12_delay_peaks = []
+    #d_v34_delay_peaks = []
+    #d_v12_delay_peaks_pos = []
+    #d_v34_delay_peaks_pos = []
+    #d_v12_delay_troughs = []
+    #d_v34_delay_troughs = []
+    #d_v12_delay_troughs_pos = []
+    #d_v34_delay_troughs_pos = []
+
+    #for start, end in d_single_frequency_times:
+    #    d_peaks, d_peaks_pos, d_troughs, d_troughs_pos = d_delays.calculate_delays(start=start, end=end)
+    #    d_v12_delay_peaks.extend(d_peaks[0])
+    #    d_v34_delay_peaks.extend(d_peaks[1])
+    #    d_v12_delay_peaks_pos.extend(d_peaks_pos[0])
+    #    d_v34_delay_peaks_pos.extend(d_peaks_pos[1])
+    #    d_v12_delay_troughs.extend(d_troughs[0])
+    #    d_v34_delay_troughs.extend(d_troughs[1])
+    #    d_v12_delay_troughs_pos.extend(d_troughs_pos[0])
+    #    d_v34_delay_troughs_pos.extend(d_troughs_pos[1])
+
+    #d_v12_delay_peaks = np.array(d_v12_delay_peaks)
+    #d_v34_delay_peaks = np.array(d_v34_delay_peaks)
+    #d_v12_delay_peaks_pos = np.array(d_v12_delay_peaks_pos)
+    #d_v34_delay_peaks_pos = np.array(d_v34_delay_peaks_pos)
+    #d_v12_delay_troughs = np.array(d_v12_delay_troughs)
+    #d_v34_delay_troughs = np.array(d_v34_delay_troughs)
+    #d_v12_delay_troughs_pos = np.array(d_v12_delay_troughs_pos)
+    #d_v34_delay_troughs_pos = np.array(d_v34_delay_troughs_pos)
+
+
+    fig, ax = plt.subplots(2, sharex=True, figsize=(10, 5))
+    ax[0].plot(time, wtu.wave_normalization(dv1), 'r')
+    ax[0].plot(time, wtu.wave_normalization(d_dv1), 'darkred')
+    ax[0].plot(time, wtu.wave_normalization(dv2), 'g')
+    ax[0].plot(time, wtu.wave_normalization(d_dv2), 'darkgreen')
+    ax[0].plot(v12_delay_peaks_pos, v12_delay_peaks, 'k.')
+    ax[0].plot(v12_delay_troughs_pos, v12_delay_troughs, 'k.')
+
+    ax[1].plot(time, wtu.wave_normalization(dv3), 'r')
+    ax[1].plot(time, wtu.wave_normalization(d_dv3), 'darkred')
+    ax[1].plot(time, wtu.wave_normalization(dv4), 'g')
+    ax[1].plot(time, wtu.wave_normalization(d_dv4), 'darkgreen')
+    ax[1].plot(v34_delay_peaks_pos, v34_delay_peaks, 'k.')
+    ax[1].plot(v34_delay_troughs_pos, v34_delay_troughs, 'k.')
+    plt.show()

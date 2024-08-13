@@ -3,7 +3,7 @@ name = "wave_timing"
 version = "0.1.0"
 description = "Timing of Plasma Waves Detected by PSP"
 authors = ["Jack Redepenning <Redep028@umn.edu>"]
-readme = "README.md"
+readme = "README.org"
 packages = [
     { include = "wave_timing", from = "src" }
 ]

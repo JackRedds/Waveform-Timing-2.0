@@ -62,6 +62,11 @@ class cross_correlation:
             wave4 = wave4[start_idx:end_idx]
             time = time[start_idx:end_idx]
 
+        def wave_normalization(wave):
+            mean = np.mean(wave)
+            std = np.std(wave)
+            return (wave - mean) / std
+
         norm1 = wtu.wave_normalization(wave1)
         norm2 = wtu.wave_normalization(wave2)
 
@@ -229,15 +234,13 @@ class multiple_delay:
 
 
     def peaks_and_troughs(self, start=0.0, end=3.5):
-        start = int(start / self.dt)
-        end = int(end / self.dt)
-        peaks1, troughs1 = wtu.find_peaks_and_troughs(self.wave1[start:end])
-        peaks2, troughs2 = wtu.find_peaks_and_troughs(self.wave2[start:end])
-        peaks3, troughs3 = wtu.find_peaks_and_troughs(self.wave3[start:end])
-        peaks4, troughs4 = wtu.find_peaks_and_troughs(self.wave4[start:end])
+        peaks1, troughs1 = wtu.find_peaks_and_troughs(self.wave1)
+        peaks2, troughs2 = wtu.find_peaks_and_troughs(self.wave2)
+        peaks3, troughs3 = wtu.find_peaks_and_troughs(self.wave3)
+        peaks4, troughs4 = wtu.find_peaks_and_troughs(self.wave4)
 
-        peaks = [peaks1, peaks2, peaks3, peaks4]
-        troughs = [troughs1, troughs2, troughs3, troughs4]
+        peaks = np.array([peaks1, peaks2, peaks3, peaks4])
+        troughs = np.array([troughs1, troughs2, troughs3, troughs4])
         return peaks, troughs
 
 
@@ -283,8 +286,8 @@ class multiple_delay:
             return delay, time
 
         if len(time_12) > len(time_34):
-            delay = [delay_34, delay_12]
-            time = [time_34, time_12]
+            delay = np.array([delay_34, delay_12])
+            time = np.array([time_34, time_12])
             delay, time = trim(delay, time)
             temp = delay[0]
             delay[0] = delay[1]
@@ -294,21 +297,20 @@ class multiple_delay:
             time[1] = temp
 
         elif len(time_12) < len(time_34):
-            delay = [delay_12, delay_34]
-            time = [time_12, time_34]
-            delay, time = trim(delay, time)
+            delay = np.array([delay_12, delay_34])
+            time = np.array([time_12, time_34])
+            delay, time = trim(delay, trim)
 
         else:
-            delay = [delay_12, delay_34]
-            time = [time_12, time_34]
+            delay = np.array([delay_12, delay_34])
+            time = np.array([time_12, time_34])
 
-        assert len(delay[0]) == len(delay[0])
+        assert len(delay_12) == len(delay_34)
 
         return delay, time
 
 
     def calculate_delays(self, start=0.0, end=3.5):
-        dt = self.dt
         peaks, troughs = self.peaks_and_troughs(start=start, end=end)
         peaks_delay_12, peaks_delay_pos_12 = self.delay(peaks[1], peaks[0])
         troughs_delay_12, troughs_delay_pos_12 = self.delay(troughs[1], troughs[0])
@@ -318,10 +320,10 @@ class multiple_delay:
         delay_peaks, delay_pos_peaks = self.trim_delays(peaks_delay_12, peaks_delay_pos_12, peaks_delay_34, peaks_delay_pos_34)
         delay_troughs, delay_pos_troughs = self.trim_delays(troughs_delay_12, troughs_delay_pos_12, troughs_delay_34, troughs_delay_pos_34)
 
-        delay_peaks = np.array(delay_peaks) * dt
-        delay_pos_peaks = np.array(delay_pos_peaks) * dt + start
-        delay_troughs = np.array(delay_troughs) * dt
-        delay_pos_troughs = np.array(delay_pos_troughs) * dt + start
+        delay_peaks = delay_peaks * self.dt
+        delay_pos_peaks = delay_pos_peaks * self.dt
+        delay_troughs = delay_troughs * self.dt
+        delay_pos_troughs = delay_pos_troughs * self.dt
 
         return delay_peaks, delay_pos_peaks, delay_troughs, delay_pos_troughs
 
@@ -338,13 +340,12 @@ def derivitive(sig: np.ndarray, time: np.ndarray):
 
     return derivitive
 
-def dot_product(vec1, vec2):
-    return np.sum(vec1 * vec2, axis=1)
 
 def angle_between(vec1: np.ndarray, vec2: np.ndarray):
-    dot = dot_product(vec1, vec2)
-    mag1 = np.sqrt(dot_product(vec1, vec1))
-    mag2 = np.sqrt(dot_product(vec2, vec2))
+    assert len(vec1) == len(vec2)
+    dot = np.dot(vec1, vec2)
+    mag1 = np.sqrt(np.dot(vec1, vec1))
+    mag2 = np.sqrt(np.dot(vec2, vec2))
     angle = np.arccos(dot / (mag1 * mag2))
     angle = np.degrees(angle)
     return angle
@@ -352,13 +353,13 @@ def angle_between(vec1: np.ndarray, vec2: np.ndarray):
 
 def wave_velocity(delay_12, delay_34, boom_length=3.5*u.m):
     assert boom_length > 0
-    delay_vector = np.array([delay_12, delay_34]).T * u.s
-    delay_mag = np.sqrt(dot_product(delay_vector, delay_vector))
+    delay_vector = np.array([delay_12, delay_34]) * u.s
+    delay_mag = np.sqrt(np.dot(delay_vector, delay_vector))
     velocity = boom_length / delay_mag
 
-    k_vector = velocity * delay_vector.T / boom_length
+    k_vector = velocity * delay_vector / boom_length
     velocity = velocity.to(u.km / u.s)
-    return velocity, k_vector.T
+    return velocity, k_vector
 
 
 def sc_to_v1234_coordinates(vector: np.ndarray):
