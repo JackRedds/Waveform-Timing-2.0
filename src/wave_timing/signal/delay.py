@@ -1,22 +1,7 @@
 import numpy as np
-import pandas as pd
 from scipy import signal, interpolate
-from astropy import units as u
-import wave_timing.utils as wtu
-import wave_timing.utils as wtu
-
-
-def find_nearest(sig: np.ndarray, value):
-    idx = np.argmin(np.abs(sig - value))
-    return idx
-
-
-def sample_rate(time: np.ndarray):
-    sample_rate = len(time) / time[-1]
-    nyquist = sample_rate / 2.0
-    dt = time[1] - time[0]
-
-    return sample_rate, nyquist, dt
+from wave_timing.math import analysis
+from wave_timing.signal import calc, operation
 
 
 class cross_correlation:
@@ -41,7 +26,7 @@ class cross_correlation:
         self.wave2 = wave2
         self.wave3 = wave3
         self.wave4 = wave4
-        self.dt = sample_rate(time)[2]
+        self.dt = calc.sample_rate(time)[2]
         self.time = time
         self.trim_wave = trim_wave
 
@@ -62,11 +47,11 @@ class cross_correlation:
             wave4 = wave4[start_idx:end_idx]
             time = time[start_idx:end_idx]
 
-        norm1 = wtu.wave_normalization(wave1)
-        norm2 = wtu.wave_normalization(wave2)
+        norm1 = analysis.wave_normalization(wave1)
+        norm2 = analysis.wave_normalization(wave2)
 
-        norm3 = wtu.wave_normalization(wave3)
-        norm4 = wtu.wave_normalization(wave4)
+        norm3 = analysis.wave_normalization(wave3)
+        norm4 = analysis.wave_normalization(wave4)
 
         lags = signal.correlation_lags(len(norm1), len(norm2), mode='full')
 
@@ -117,8 +102,8 @@ class cross_correlation:
 
         def error_determination(pks, correlation, lags):
             if len(pks) > 1:
-                upr = find_nearest(pks[pks>np.argmax(correlation)], np.argmax(correlation))
-                lwr = find_nearest(pks[pks<np.argmax(correlation)], np.argmax(correlation))
+                upr = calc.find_nearest(pks[pks>np.argmax(correlation)], np.argmax(correlation))
+                lwr = calc.find_nearest(pks[pks<np.argmax(correlation)], np.argmax(correlation))
                 upr = pks[pks>np.argmax(correlation)][upr]
                 lwr = pks[pks<np.argmax(correlation)][lwr]
                 correlation = correlation[lwr:upr]
@@ -143,7 +128,7 @@ class cross_correlation:
 
     def find_delay(self, start=0.0, end=3.5, peak_width=5):
         assert peak_width > 0
-        samp_rt = sample_rate(self.time)[0]
+        samp_rt = calc.sample_rate(self.time)[0]
         dt = self.dt
         wave1 = self.wave1
         wave2 = self.wave2
@@ -192,7 +177,7 @@ class cross_correlation:
         assert window_size > 0
         assert hop_size > 0
         signal_len = len(self.wave1)
-        dt = sample_rate(self.time)[2]
+        dt = calc.sample_rate(self.time)[2]
         num_windows = (signal_len - window_size) // hop_size + 1
         time_delays = np.zeros((num_windows, 2))
         time = np.zeros(num_windows)
@@ -225,16 +210,16 @@ class multiple_delay:
         self.wave3 = wave3
         self.wave4 = wave4
         self.time = time
-        self.dt = sample_rate(time)[2]
+        self.dt = calc.sample_rate(time)[2]
 
 
     def peaks_and_troughs(self, start=0.0, end=3.5):
         start = int(start / self.dt)
         end = int(end / self.dt)
-        peaks1, troughs1 = wtu.find_peaks_and_troughs(self.wave1[start:end])
-        peaks2, troughs2 = wtu.find_peaks_and_troughs(self.wave2[start:end])
-        peaks3, troughs3 = wtu.find_peaks_and_troughs(self.wave3[start:end])
-        peaks4, troughs4 = wtu.find_peaks_and_troughs(self.wave4[start:end])
+        peaks1, troughs1 = operation.find_peaks_and_troughs(self.wave1[start:end])
+        peaks2, troughs2 = operation.find_peaks_and_troughs(self.wave2[start:end])
+        peaks3, troughs3 = operation.find_peaks_and_troughs(self.wave3[start:end])
+        peaks4, troughs4 = operation.find_peaks_and_troughs(self.wave4[start:end])
 
         peaks = [peaks1, peaks2, peaks3, peaks4]
         troughs = [troughs1, troughs2, troughs3, troughs4]
@@ -250,7 +235,7 @@ class multiple_delay:
             delays = np.zeros(length)
             ave_position = np.zeros(length)
             for i in range(length):
-                idx = find_nearest(signal1, signal2[i])
+                idx = calc.find_nearest(signal1, signal2[i])
                 delays[i] = signal2[i] - signal1[idx]
                 ave_position[i] = (signal1[idx] + signal2[i]) / 2
 
@@ -259,7 +244,7 @@ class multiple_delay:
             delays = np.zeros(length)
             ave_position = np.zeros(length)
             for i in range(length):
-                idx = find_nearest(signal2, signal1[i])
+                idx = calc.find_nearest(signal2, signal1[i])
                 delays[i] = signal2[idx] - signal1[i]
                 ave_position[i] = (signal1[i] + signal2[idx]) / 2
 
@@ -275,7 +260,7 @@ class multiple_delay:
             delay_new = np.zeros(length)
             time_new = np.zeros(length)
             for i in range(length):
-                idx = find_nearest(time[1], time[0][i])
+                idx = calc.find_nearest(time[1], time[0][i])
                 delay_new[i] = delay[1][idx]
                 time_new[i] = time[1][idx]
             delay[1] = delay_new
@@ -320,50 +305,9 @@ class multiple_delay:
 
         delay_peaks = np.array(delay_peaks) * dt
         delay_pos_peaks = np.array(delay_pos_peaks) * dt + start
+        delay_pos_peaks = np.mean(delay_pos_peaks, axis=0)
         delay_troughs = np.array(delay_troughs) * dt
         delay_pos_troughs = np.array(delay_pos_troughs) * dt + start
+        delay_pos_troughs = np.mean(delay_pos_troughs, axis=0)
 
         return delay_peaks, delay_pos_peaks, delay_troughs, delay_pos_troughs
-
-
-def derivitive(sig: np.ndarray, time: np.ndarray):
-    assert len(sig) != 0
-    # sig must be numpy array
-    length = len(sig)
-    derivitive = np.zeros(length)
-    dt = time[1] - time[0]
-
-    for i in range(length - 1):
-        derivitive[i] = (sig[i + 1] - sig[i]) / dt
-
-    return derivitive
-
-def dot_product(vec1, vec2):
-    return np.sum(vec1 * vec2, axis=1)
-
-def angle_between(vec1: np.ndarray, vec2: np.ndarray):
-    dot = dot_product(vec1, vec2)
-    mag1 = np.sqrt(dot_product(vec1, vec1))
-    mag2 = np.sqrt(dot_product(vec2, vec2))
-    angle = np.arccos(dot / (mag1 * mag2))
-    angle = np.degrees(angle)
-    return angle
-
-
-def wave_velocity(delay_12, delay_34, boom_length=3.5*u.m):
-    assert boom_length > 0
-    delay_vector = np.array([delay_12, delay_34]).T * u.s
-    delay_mag = np.sqrt(dot_product(delay_vector, delay_vector))
-    velocity = boom_length / delay_mag
-
-    k_vector = velocity * delay_vector.T / boom_length
-    velocity = velocity.to(u.km / u.s)
-    return velocity, k_vector.T
-
-
-def sc_to_v1234_coordinates(vector: np.ndarray):
-    theta = np.radians(55)
-    rotation_matrix = np.array([[np.cos(theta), -np.sin(theta), 0],
-                                [np.sin(theta),  np.cos(theta), 0],
-                                [0,             0,             -1]])
-    return np.dot(vector, rotation_matrix)
