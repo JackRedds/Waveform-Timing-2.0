@@ -1,4 +1,4 @@
-NAME := wave-timing
+NAME := test
 POETRY_LOCK := poetry.lock
 
 install: pyproject.toml $(POETRYF_LOCK)

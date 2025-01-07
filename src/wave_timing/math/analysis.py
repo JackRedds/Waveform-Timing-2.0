@@ -23,9 +23,9 @@ def wave_velocity(delay_12, delay_34, boom_length=3.5*u.m):
     velocity = boom_length / delay_mag
 
     k_vector = velocity * delay_vector.T / boom_length
-    velocity = velocity.to(u.km / u.s)
-    velocity_vec = velocity.value * k_vector
-    return velocity_vec.T
+    velocity = velocity.to("km/s")
+    velocity_vec = velocity * k_vector
+    return velocity_vec.T.value
 
 
 def wave_normalization(wave: np.ndarray):

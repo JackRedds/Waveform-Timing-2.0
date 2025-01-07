@@ -3,6 +3,7 @@ import pandas as pd
 from pytplot import get_data as get_psp_data
 import pyspedas
 from wave_timing.utils import directory
+import matplotlib.pyplot as plt
 
 
 class get_data:
@@ -47,6 +48,43 @@ class get_data:
 
         return dv1, dv2, dv3, dv4, dv5
 
+    def get_vdc_data(self):
+        data_type = 'dfb_dbm_vdc'
+
+        vdc_data = pyspedas.psp.fields(
+            trange=[self.start_time, self.end_time],
+            datatype=data_type,
+            level='l2',
+            time_clip=True,
+            file_path=directory.psp_data_dir
+            )
+
+        vdc1 = get_psp_data('psp_fld_l2_dfb_dbm_vdc1').y
+        vdc2 = get_psp_data('psp_fld_l2_dfb_dbm_vdc2').y
+        vdc3 = get_psp_data('psp_fld_l2_dfb_dbm_vdc3').y
+        vdc4 = get_psp_data('psp_fld_l2_dfb_dbm_vdc4').y
+        vdc5 = get_psp_data('psp_fld_l2_dfb_dbm_vdc5').y
+        time_TT2000 = get_psp_data('psp_fld_l2_dfb_dbm_vdc_time_series_TT2000').times
+        time = get_psp_data('psp_fld_l2_dfb_dbm_vdc1').v[0]
+        start_date = pd.to_datetime(time_TT2000, unit='s')
+
+        dv1 = vdc1 - (vdc3 + vdc4) / 2
+        dv2 = (vdc3 + vdc4) / 2 - vdc2
+        dv3 = (vdc1 + vdc2) / 2 - vdc3
+        dv4 = vdc4 - (vdc1 + vdc2) / 2
+        dvsc = (vdc1 + vdc2 + vdc3 + vdc4) / 4
+        dv5 = dvsc - vdc5
+
+        dv1 = pd.DataFrame(dv1.T, columns=start_date, index=time)
+        dv2 = pd.DataFrame(dv2.T, columns=start_date, index=time)
+        dv3 = pd.DataFrame(dv3.T, columns=start_date, index=time)
+        dv4 = pd.DataFrame(dv4.T, columns=start_date, index=time)
+        dv5 = pd.DataFrame(dv5.T, columns=start_date, index=time)
+
+        return dv1, dv2, dv3, dv4, dv5
+
+
+
 
     def get_mag_data(self):
         data_type = 'mag_SC_4_Sa_per_Cyc'
@@ -89,5 +127,6 @@ class get_data:
 
         return sw_comp
 
-def save_data(data: pd.DataFrame, file_name):
-    data.to_csv(directory.output_data_dir / file_name)
+def save_data(data: pd.DataFrame, file_path, file_name: str):
+    data.to_csv(file_path / file_name)
+    print(f"Data File {file_name} Saved")

@@ -2,22 +2,28 @@ import numpy as np
 import pandas as pd
 from wave_timing.math import geometry, trig, analysis
 from wave_timing.signal import operation, calc, delay
-from wave_timing.utils import data
+from wave_timing.utils import data, directory
+from wave_timing.diagnostics import waveform_plot
+import matplotlib.pyplot as plt
+
+#Have you run than angle code for the VDC data from 2022-12-10 21:00 to 24:00?
+#Also 2021-11-22 04:00 to 15:00 and 2023-06-2119:30 to 21:00.
 
 
-start_date = '2021-01-19'
-end_date = '2021-01-20'
+start_date = '2023-06-21 19:30'
+end_date = '2023-06-21 21:00'
 taps = 601
 cutoff = [100, 900]
 v1_vec = np.array([1, 0])
 v5_vec = np.array([0, 0, 1])
+data_path = directory.wave_finder_data_dir
 
-data = data.get_data(start_date, end_date)
-dV1, dV2, dV3, dV4, __ = data.get_vac_data()
+info = data.get_data(start_date, end_date)
+dV1, dV2, dV3, dV4, __ = info.get_vdc_data()
 time = dV1.index.to_numpy()
 vac_sample_rt, __, dt = calc.sample_rate(time)
-mag_data = data.get_mag_data()
-sw_data = data.get_sw_data()
+mag_data = info.get_mag_data()
+sw_data = info.get_sw_data()
 filters = trig.FIRBandPass(taps, cutoff, vac_sample_rt)
 
 for date in dV1.columns:
@@ -67,13 +73,15 @@ for date in dV1.columns:
     delay_pos = np.array(delay_pos)
     wave_frequency = np.array(wave_frequency)
 
+    if len(delay_pos) == 0:
+        continue
+
     B_vec, V_vec, delay_date = operation.B_V_vec_near_time(date, mag_data, sw_data, delay_pos)
 
     d = {f'Delay Time [s after {date}]': delay_pos, 'v12 Delay sc [s]': v12_delay,
          'v34 Delay sc [s]': v34_delay, 'Wave Frequency sc [Hz]': wave_frequency}
 
     wave_properties = pd.DataFrame(d, index=delay_date)
-
 
     # Wave velocity Space Craft Frame
     wave_velocity_sc = analysis.wave_velocity(v12_delay, v34_delay)
@@ -129,10 +137,13 @@ for date in dV1.columns:
     wave_properties[['Bx [nT]', 'By [nT]', 'Bz [nT]']] = B_vec
 
     # Magnetic Field Magnitude in X-Y
-    wave_properties['|B| [nT]'] = np.sqrt(geometry.dot_product(B_vec[:, :-1], B_vec[:, :-1]))
+    wave_properties['|B| xy [nT]'] = np.sqrt(geometry.dot_product(B_vec[:, :-1], B_vec[:, :-1]))
 
     # Magnetic Field Magnitude
     wave_properties['|B| [nT]'] = np.sqrt(geometry.dot_product(B_vec, B_vec))
 
-    print(wave_properties)
-    exit()
+    wave_properties_within_45 = wave_properties[abs(wave_properties['B-V5 Angle [Deg]']-90) < 45]
+
+
+    if len(wave_properties_within_45) > 0:
+        data.save_data(wave_properties_within_45, data_path, f"{date}_within_45.csv")

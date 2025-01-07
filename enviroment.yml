@@ -2,6 +2,6 @@ name: wave-timing
 channels:
   - conda-forge
 dependencies:
-  - python
+  - python=3.9
   - pip
   - poetry
