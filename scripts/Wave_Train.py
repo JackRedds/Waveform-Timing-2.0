@@ -180,7 +180,7 @@ while True:
                     start_time = float(values_2["-START-RANGE-"])
                     end_time = float(values_2["-END-RANGE-"])
 
-            delay_pos = (end_time + start_time) / 2
+                delay_pos = (end_time + start_time) / 2
 
             if event_2 == "Exit" or event_2 == sg.WINDOW_CLOSED:
                 plt.close()
