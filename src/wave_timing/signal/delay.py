@@ -38,6 +38,8 @@ class cross_correlation:
         wave3 = self.wave3
         wave4 = self.wave4
         time = self.time
+        start = float(start)
+        end = float(end)
         if trim * self.trim_wave:
             start_idx = int(start / dt)
             end_idx = int(end / dt)
@@ -75,6 +77,8 @@ class cross_correlation:
         wave3 = self.wave3
         wave4 = self.wave4
         time = self.time
+        start = float(start)
+        end = float(end)
         if self.trim_wave:
             start_idx = int(start / dt)
             end_idx = int(end / dt)
@@ -119,11 +123,17 @@ class cross_correlation:
 
             return err
 
+        corr_max_12 = np.max(correlation[0])
+        corr_max_34 = np.max(correlation[1])
+
         err_12 = error_determination(pks_12, correlation[0], lags)
         err_34 = error_determination(pks_34, correlation[1], lags)
+
+        corr_max = np.array([corr_max_12, corr_max_34])
         err = np.array([err_12, err_34])
 
-        return xmax, correlation, err
+
+        return xmax * dt, corr_max, err * dt
 
 
     def find_delay(self, start=0.0, end=3.5, peak_width=5):
@@ -135,6 +145,8 @@ class cross_correlation:
         wave3 = self.wave3
         wave4 = self.wave4
         time = self.time
+        start = float(start)
+        end = float(end)
         if self.trim_wave:
             start_idx = int(start / dt)
             end_idx = int(end / dt)

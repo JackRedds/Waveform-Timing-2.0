@@ -5,30 +5,25 @@ import matplotlib as mpl
 from wave_timing.math import trig, geometry, analysis
 
 
-def wave_sliding_fft(wave1, time, ax, wave_norm=True):
-    spec1, time_spec, xf, __ = trig.sliding_fft(wave1, time)
+def plot_waveform(time, axes, wave_norm=True, **waves):
+    colors = ['k', 'r']
+    for label, wave, color in zip(waves.keys(), waves.values(), colors):
+        if wave_norm:
+            wave = analysis.wave_normalization(wave)
 
-    if wave_norm:
-        wave1 = analysis.wave_normalization(wave1)
+        axes.plot(time, wave, label=label, color=color)
+    axes.legend(loc = 'upper right')
 
-    ax[0].pcolormesh(time_spec, xf, spec1.T, shading='gouraud',
+def plot_sliding_fft(time, axes, wave_norm=True, **waves):
+    for ax, label, wave in zip(axes, waves.keys(), waves.values()):
+        if wave_norm:
+            wave = analysis.wave_normalization(wave)
+        spec, time_spec, xf, __ = trig.sliding_fft(wave, time)
+
+        ax.pcolormesh(time_spec, xf, spec.T, shading='gouraud',
                      cmap='jet', norm=mpl.colors.LogNorm())
-    ax[0].set_ylim(0, 1000)
-    ax[1].plot(time, wave1, 'r')
+        ax.set_ylim(0, 1000)
+        ax.set_ylabel(label)
 
-def all_waves_sliding_fft(wave1, wave2, wave3, wave4, time, wave_norm=True):
-    fig, ax = plt.subplots(8, sharex=True, figsize=(10, 20))
-    wave_sliding_fft(wave1, time, ax=ax[0:1], wave_norm=wave_norm)
-    wave_sliding_fft(wave2, time, ax=ax[2:3], wave_norm=wave_norm)
-    wave_sliding_fft(wave3, time, ax=ax[4:5], wave_norm=wave_norm)
-    wave_sliding_fft(wave4, time, ax=ax[6:7], wave_norm=wave_norm)
-    ax[0].set_ylabel('$f$ [Hz]')
-    ax[1].set_ylabel('dV1')
-    ax[2].set_ylabel('$f$ [Hz]')
-    ax[3].set_ylabel('dV2')
-    ax[4].set_ylabel('$f$ [Hz]')
-    ax[5].set_ylabel('dV3')
-    ax[6].set_ylabel('$f$ [Hz]')
-    ax[7].set_ylabel('dV4')
-    ax[7].set_xlabel('time [s]')
+    ax.set_xlabel('Time (s)')
     plt.tight_layout()

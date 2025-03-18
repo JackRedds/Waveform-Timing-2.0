@@ -127,6 +127,13 @@ class get_data:
 
         return sw_comp
 
+def iserror(func, *args, **kw):
+    try:
+        func(*args, **kw)
+        return False
+    except Exception:
+        return True
+
 def save_data(data: pd.DataFrame, file_path, file_name: str):
     data.to_csv(file_path / file_name)
     print(f"Data File {file_name} Saved")
