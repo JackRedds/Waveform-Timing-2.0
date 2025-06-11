@@ -40,6 +40,7 @@ cutoff = [100, 900]
 v1_vec = np.array([1, 0])
 v5_vec = np.array([0, 0, 1])
 data_path = directory.wave_train_data_dir
+plot_path = directory.plot_dir
 
 Timing_Type = []
 Timing_Date = []
@@ -53,6 +54,8 @@ B_Mag = []
 SW_Vec = []
 SW_Mag = []
 
+Lower_Freq = []  # New list for lower frequency cutoff
+Upper_Freq = []  # New list for upper frequency cutoff
 
 while True:
     event, values = window.read()
@@ -112,7 +115,7 @@ while True:
         while True:
             event_3, values_3 = settings_window.read()
 
-            if event_3 == "-UPDATE-DATA-":
+            if event_3 == "-UPDATE-":
                 cutoff = [int(values_3["-LWR-FREQ-"]), int(values_3["-UPR-FREQ-"])]
                 settings_window.close()
             elif event_3 == "Exit" or event_3 == sg.WINDOW_CLOSED:
@@ -172,8 +175,14 @@ while True:
             event_2, values_2 = time_range_window.read()
 
             if event_2 == "-TRAIN-" or event_2 == "-SOLITARY-":
-                start_time = float(values_2["-START-RANGE-"])
-                end_time = float(values_2["-END-RANGE-"])
+                start_str = values_2["-START-RANGE-"]
+                end_str = values_2["-END-RANGE-"]
+                if start_str and end_str:
+                    start_time = float(values_2["-START-RANGE-"])
+                    end_time = float(values_2["-END-RANGE-"])
+                else:
+                    start_time = time.min()
+                    end_time = time.max()    
                 while start_time < time[0] or end_time > time[-1]:
                     time_range_window["-RANGE-"].update("Invalid Time Range. Try Again:")
                     event_2, values_2 = time_range_window.read()
@@ -187,20 +196,78 @@ while True:
                 break
 
             elif event_2 == "-PLOT-RANGE-":
+            
+                start_str = values_2["-START-RANGE-"]
+                end_str = values_2["-END-RANGE-"]
+                
+                
+                if start_str and end_str:
+                    try:
+                        start_time = float(start_str)
+                        end_time = float(end_str)
+                        name_suffix = f"{start_time:.2f}_{end_time:.2f}"
+                    except ValueError:
+                        sg.popup_error("Start/End time must be valid numbers.")
+                        continue
+                else:
+                    start_time = time.min()
+                    end_time = time.max()
+                    name_suffix = "fullrange"
+                
                 fig, ax = plt.subplots(2, figsize = (20, 10), sharex=True)
                 waveform_plot.plot_waveform(time, ax[0], True, dv1=dv1, dv2=dv2)
                 waveform_plot.plot_waveform(time, ax[1], True, dv3=dv3, dv4=dv4)
                 ax[1].set_xlabel('Time (s)')
-                ax[0].set_xlim(time.min(), time.max())
+                #ax[0].set_xlim(time.min(), time.max())
+                ax[0].set_xlim(start_time, end_time)
                 plt.tight_layout()
+                plot_filename = plot_path / f"{date}_waveform_{name_suffix}.png"
+                fig.savefig(plot_filename, dpi=300)
                 plt.show(block=False)
 
+
             elif event_2 == "-FFT-RANGE-":
+                start_str = values_2["-START-RANGE-"]
+                end_str = values_2["-END-RANGE-"]
+                
+                if start_str and end_str:
+                    try:
+                        start_time = float(start_str)
+                        end_time = float(end_str)
+                        name_suffix = f"{start_time:.2f}_{end_time:.2f}"
+                    except ValueError:
+                        sg.popup_error("Start/End time must be valid numbers.")
+                        continue
+                else:
+                
+                    start_time = time.min()
+                    end_time = time.max()
+                    name_suffix = "fullrange"
+                
                 fig, ax = plt.subplots(4, sharex=True, sharey=True, figsize=(20, 10))
                 waveform_plot.plot_sliding_fft(time, ax, True, dv1=dv1_unfilt, dv2=dv2_unfilt, dv3=dv3_unfilt, dv4=dv4_unfilt)
+                fft_filename = plot_path / f"{date}_fft_{name_suffix}.png"
+                fig.savefig(fft_filename, dpi=300)
                 plt.show(block=True)
 
+
             elif event_2 == "-SINGLE-FREQ-":
+                start_str = values_2["-START-RANGE-"]
+                end_str = values_2["-END-RANGE-"]
+                
+                if start_str and end_str:
+                    try:
+                        start_time = float(start_str)
+                        end_time = float(end_str)
+                        name_suffix = f"{start_time:.2f}_{end_time:.2f}"
+                    except ValueError:
+                        sg.popup_error("Start/End time must be valid numbers.")
+                        continue
+                else:
+                    start_time = time.min()
+                    end_time = time.max()
+                    name_suffix = "fullrange"
+                
                 single_freq_times, __ = operation.frequency_filter(dv1, dv2, dv3, dv4, time)
 
                 fig, ax = plt.subplots(2, figsize = (20, 10), sharex=True)
@@ -218,11 +285,16 @@ while True:
                     ax[1].fill_between(times, -0.5, 0.5, color='grey', alpha=0.4)
 
                 ax[1].set_xlabel('Time (s)')
-                ax[0].set_xlim(time.min(), time.max())
+                #ax[0].set_xlim(time.min(), time.max())
+                ax[0].set_xlim(start_time, end_time)
                 plt.tight_layout()
+
+                freq_filename = plot_path/ f"{date}_highlighted_freq_{name_suffix}.png"
+                fig.savefig(freq_filename, dpi=300)
                 plt.show(block=False)
 
             elif event_2 == "-TRAIN-":
+                name_suffix = f"{start_time:.2f}_{end_time:.2f}"
                 time_range_window.close()
                 plt.close()
                 timing_delay, timing_corr, __ = delay_calc.find_delay(start_time, end_time)
@@ -240,10 +312,78 @@ while True:
                 B_Mag.append(B_mag_data.iloc[B_idx])
                 SW_Vec.append(V_vec_data.iloc[SW_idx].to_numpy())
                 SW_Mag.append(V_mag_data.iloc[SW_idx])
+                Lower_Freq.append(cutoff[0])  # Add lower frequency cutoff
+                Upper_Freq.append(cutoff[1])  # Add upper frequency cutoff
+                
+                # Save CSV immediately
+                timing_type = np.array(Timing_Type)
+                timing_date = np.array(Timing_Date)
+                v12_delay = np.array(V12_Delay)
+                v34_delay = np.array(V34_Delay)
+                v12_err = np.array(V12_Err)
+                v34_err = np.array(V34_Err)
+                delay_pos = np.array(Delay_Pos)
+                B_vec = np.array(B_Vec)
+                B_mag = np.array(B_Mag)
+                V_vec = np.array(SW_Vec)
+                V_mag = np.array(SW_Mag)
+                lower_freq = np.array(Lower_Freq)  # Convert to numpy array
+                upper_freq = np.array(Upper_Freq)  # Convert to numpy array
+
+                d = {'Delay Time [s after Date]': delay_pos, 'v12 Delay sc [s]': v12_delay,
+                     'v34 Delay sc [s]': v34_delay, 'Lower Frequency [Hz]': lower_freq, 'Upper Frequency [Hz]': upper_freq}
+                
+                wave_properties = pd.DataFrame(d, index=timing_date)
+		# Wave velocity Space Craft Frame
+                wave_velocity_sc = analysis.wave_velocity(v12_delay, v34_delay)
+                wave_properties[['Vp sc v12 [km/s]', 'Vp sc v34 [km/s]']] = wave_velocity_sc
+                # Wave Velocity Magnitude Space Craft Frame
+                wave_properties['|Vp| sc [km/s]'] = np.sqrt(geometry.dot_product(wave_velocity_sc, wave_velocity_sc))
+                # Angle Between Wave and V1 Boom Space Craft Frame
+                wave_properties['Vp-V1 sc Angle [Deg]'] = geometry.angle_between(wave_velocity_sc, v1_vec)
+                # Angle Between Wave and Solar Wind Space Craft Frame
+                wave_properties['Vp-Vsw sc Angle [Deg]'] = geometry.angle_between(wave_velocity_sc, V_vec[:, :-1])
+                
+                # Wave Velocity Plasma Frame
+                wave_velocity_pf = wave_velocity_sc - V_vec[:, :-1]
+                wave_properties[['Vp pf v12 [km/s]', 'Vp pf v12 [km/s]']] = wave_velocity_pf
+                # Wave Velocity Magnitude Plasma Frame
+                wave_properties['|Vp| pf [km/s]'] = np.sqrt(geometry.dot_product(wave_velocity_pf, wave_velocity_pf))
+                
+                # Angle Between Wave and Magnetic Field Plasma Frame
+                wave_properties['Vp-B pf Angle [Deg]'] = geometry.angle_between(B_vec[:, :-1], wave_velocity_pf)
+                # Angle Between Solar Wind and V1 Boom Space Craft Frame
+                wave_properties['Vsw-V1 sc Angle [Deg]'] = geometry.angle_between(V_vec[:, :-1], v1_vec)
+                # Angle Between Solar wind and V5 Boom Space Craft Frame
+                wave_properties['Vsw-V5 sc Angle [Deg]'] = geometry.angle_between(V_vec, v5_vec)
+                # Angle Between Magnetic Field and Solar Wind Space Craft Frame
+                wave_properties['Vsw-B sc Angle [Deg]'] = geometry.angle_between(B_vec, V_vec)
+                # Angle Between Magnetic Field and Solar Wind in X-Y plane Space Craft Frame
+                wave_properties['Vsw-B sc xy [Deg]'] = geometry.angle_between(B_vec[:, :-1], V_vec[:, :-1])
+                # Angle Between Magnetic Field and V1 Boom
+                wave_properties['B-V1 Angle [Deg]'] = geometry.angle_between(B_vec[:, :-1], v1_vec)
+                # Angle Between Magnetic Filed and V5 Boom
+                wave_properties['B-V5 Angle [Deg]'] = geometry.angle_between(B_vec, v5_vec)
+                
+                # Solar Wind Velocity Vector Space Craft Frame
+                wave_properties[['Vswx sc [km/s]', 'Vswy sc [km/s]', 'Vswz sc [km/s]']] = V_vec
+                # Solar Wind Velocity Magnitude in X-Y plane Space Craft Frame
+                wave_properties['|Vsw| sc xy [km/s]'] = np.sqrt(geometry.dot_product(V_vec[:, :-1], V_vec[:, :-1]))
+                # Solar wind Velocity Magnitude Space Craft Frame
+                wave_properties['|Vsw| sc [km/s]'] = np.sqrt(geometry.dot_product(V_vec, V_vec))
+                # Magnetic Field Vector
+                wave_properties[['Bx [nT]', 'By [nT]', 'Bz [nT]']] = B_vec
+                # Magnetic Field Magnitude in X-Y
+                wave_properties['|B| xy [nT]'] = np.sqrt(geometry.dot_product(B_vec[:, :-1], B_vec[:, :-1]))
+                # Magnetic Field Magnitude
+                wave_properties['|B| [nT]'] = np.sqrt(geometry.dot_product(B_vec, B_vec))
+
+                data.save_data(wave_properties, data_path, f"{date}_{name_suffix}.csv")
 
                 break
 
             elif event_2 == "-SOLITARY-":
+                name_suffix = f"{start_time:.2f}_{end_time:.2f}"
                 time_range_window.close()
                 plt.close()
                 timing_delay, timing_corr, timing_error = delay_calc.interpolation(start_time, end_time)
@@ -252,7 +392,7 @@ while True:
                 Timing_Date.append(date)
                 V12_Delay.append(timing_delay[0])
                 V34_Delay.append(timing_delay[1])
-                V12_Err.append(timing_error[[0]])
+                V12_Err.append(timing_error[0])
                 V34_Err.append(timing_error[1])
                 Delay_Pos.append(delay_pos)
                 B_idx = calc.find_nearest(B_date, date)
@@ -261,86 +401,58 @@ while True:
                 B_Mag.append(B_mag_data.iloc[B_idx])
                 SW_Vec.append(V_vec_data.iloc[SW_idx].to_numpy())
                 SW_Mag.append(V_mag_data.iloc[SW_idx])
+                Lower_Freq.append(cutoff[0])  # Add lower frequency cutoff
+                Upper_Freq.append(cutoff[1])  # Add upper frequency cutoff
+                
+                
+                # Save CSV immediately
+                timing_type = np.array(Timing_Type)
+                timing_date = np.array(Timing_Date)
+                v12_delay = np.array(V12_Delay)
+                v34_delay = np.array(V34_Delay)
+                v12_err = np.array(V12_Err)
+                v34_err = np.array(V34_Err)
+                delay_pos = np.array(Delay_Pos)
+                B_vec = np.array(B_Vec)
+                B_mag = np.array(B_Mag)
+                V_vec = np.array(SW_Vec)
+                V_mag = np.array(SW_Mag)
+                lower_freq = np.array(Lower_Freq)  # Convert to numpy array
+                upper_freq = np.array(Upper_Freq)  # Convert to numpy array
+                
+                
+                d = {'Delay Time [s after Date]': delay_pos, 'v12 Delay sc [s]': v12_delay,
+                     'v34 Delay sc [s]': v34_delay, 'Lower Frequency [Hz]': lower_freq, 'Upper Frequency [Hz]': upper_freq}
+                
+                wave_properties = pd.DataFrame(d, index=timing_date)
+
+                wave_velocity_sc = analysis.wave_velocity(v12_delay, v34_delay)
+                wave_properties[['Vp sc v12 [km/s]', 'Vp sc v34 [km/s]']] = wave_velocity_sc
+                wave_properties['|Vp| sc [km/s]'] = np.sqrt(geometry.dot_product(wave_velocity_sc, wave_velocity_sc))
+                wave_properties['Vp-V1 sc Angle [Deg]'] = geometry.angle_between(wave_velocity_sc, v1_vec)
+                wave_properties['Vp-Vsw sc Angle [Deg]'] = geometry.angle_between(wave_velocity_sc, V_vec[:, :-1])
+                wave_velocity_pf = wave_velocity_sc - V_vec[:, :-1]
+                wave_properties[['Vp pf v12 [km/s]', 'Vp pf v12 [km/s]']] = wave_velocity_pf
+                wave_properties['|Vp| pf [km/s]'] = np.sqrt(geometry.dot_product(wave_velocity_pf, wave_velocity_pf))
+                wave_properties['Vp-B pf Angle [Deg]'] = geometry.angle_between(B_vec[:, :-1], wave_velocity_pf)
+                wave_properties['Vsw-V1 sc Angle [Deg]'] = geometry.angle_between(V_vec[:, :-1], v1_vec)
+                wave_properties['Vsw-V5 sc Angle [Deg]'] = geometry.angle_between(V_vec, v5_vec)
+                wave_properties['Vsw-B sc Angle [Deg]'] = geometry.angle_between(B_vec, V_vec)
+                wave_properties['Vsw-B sc xy [Deg]'] = geometry.angle_between(B_vec[:, :-1], V_vec[:, :-1])
+                wave_properties['B-V1 Angle [Deg]'] = geometry.angle_between(B_vec[:, :-1], v1_vec)
+                wave_properties['B-V5 Angle [Deg]'] = geometry.angle_between(B_vec, v5_vec)
+                wave_properties[['Vswx sc [km/s]', 'Vswy sc [km/s]', 'Vswz sc [km/s]']] = V_vec
+                wave_properties['|Vsw| sc xy [km/s]'] = np.sqrt(geometry.dot_product(V_vec[:, :-1], V_vec[:, :-1]))
+                wave_properties['|Vsw| sc [km/s]'] = np.sqrt(geometry.dot_product(V_vec, V_vec))
+                wave_properties[['Bx [nT]', 'By [nT]', 'Bz [nT]']] = B_vec
+                wave_properties['|B| xy [nT]'] = np.sqrt(geometry.dot_product(B_vec[:, :-1], B_vec[:, :-1]))
+                wave_properties['|B| [nT]'] = np.sqrt(geometry.dot_product(B_vec, B_vec))
+
+                data.save_data(wave_properties, data_path, f"{date}__{name_suffix}.csv")
 
                 break
 
     elif event == "Exit" or event == sg.WINDOW_CLOSED:
         break
 
-timing_type = np.array(Timing_Type)
-timing_date = np.array(Timing_Date)
-v12_delay = np.array(V12_Delay)
-v34_delay = np.array(V34_Delay)
-v12_err = np.array(V12_Err)
-v34_err = np.array(V34_Err)
-delay_pos = np.array(Delay_Pos)
-B_vec = np.array(B_Vec)
-B_mag = np.array(B_Mag)
-V_vec = np.array(SW_Vec)
-V_mag = np.array(SW_Mag)
-
-d = {f'Delay Time [s after Date]': delay_pos, 'v12 Delay sc [s]': v12_delay,
-     'v34 Delay sc [s]': v34_delay} #Add wave frequency
-
-wave_properties = pd.DataFrame(d, index=timing_date)
-
-# Wave velocity Space Craft Frame
-wave_velocity_sc = analysis.wave_velocity(v12_delay, v34_delay)
-wave_properties[['Vp sc v12 [km/s]', 'Vp sc v34 [km/s]']] = wave_velocity_sc
-
-# Wave Velocity Magnitude Space Craft Frame
-wave_properties['|Vp| sc [km/s]'] = np.sqrt(geometry.dot_product(wave_velocity_sc, wave_velocity_sc))
-
-# Angle Between Wave and V1 Boom Space Craft Frame
-wave_properties['Vp-V1 sc Angle [Deg]'] = geometry.angle_between(wave_velocity_sc, v1_vec)
-
-# Angle Between Wave and Solar Wind Space Craft Frame
-wave_properties['Vp-Vsw sc Angle [Deg]'] = geometry.angle_between(wave_velocity_sc, V_vec[:, :-1])
-
-# Wave Velocity Plasma Frame
-wave_velocity_pf = wave_velocity_sc - V_vec[:, :-1]
-wave_properties[['Vp pf v12 [km/s]', 'Vp pf v12 [km/s]']] = wave_velocity_pf
-
-# Wave Velocity Magnitude Plasma Frame
-wave_properties['|Vp| pf [km/s]'] = np.sqrt(geometry.dot_product(wave_velocity_pf, wave_velocity_pf))
-
-# Angle Between Wave and Magnetic Field Plasma Frame
-wave_properties['Vp-B pf Angle [Deg]'] = geometry.angle_between(B_vec[:, :-1], wave_velocity_pf)
-
-# Angle Between Solar Wind and V1 Boom Space Craft Frame
-wave_properties['Vsw-V1 sc Angle [Deg]'] = geometry.angle_between(V_vec[:, :-1], v1_vec)
-
-# Angle Between Solar wind and V5 Boom Space Craft Frame
-wave_properties['Vsw-V5 sc Angle [Deg]'] = geometry.angle_between(V_vec, v5_vec)
-
-# Angle Between Magnetic Field and Solar Wind Space Craft Frame
-wave_properties['Vsw-B sc Angle [Deg]'] = geometry.angle_between(B_vec, V_vec)
-
-# Angle Between Magnetic Field and Solar Wind in X-Y plane Space Craft Frame
-wave_properties['Vsw-B sc xy [Deg]'] = geometry.angle_between(B_vec[:, :-1], V_vec[:, :-1])
-
-# Angle Between Magnetic Field and V1 Boom
-wave_properties['B-V1 Angle [Deg]'] = geometry.angle_between(B_vec[:, :-1], v1_vec)
-
-# Angle Between Magnetic Filed and V5 Boom
-wave_properties['B-V5 Angle [Deg]'] = geometry.angle_between(B_vec, v5_vec)
-
-# Solar Wind Velocity Vector Space Craft Frame
-wave_properties[['Vswx sc [km/s]', 'Vswy sc [km/s]', 'Vswz sc [km/s]']] = V_vec
-
-# Solar Wind Velocity Magnitude in X-Y plane Space Craft Frame
-wave_properties['|Vsw| sc xy [km/s]'] = np.sqrt(geometry.dot_product(V_vec[:, :-1], V_vec[:, :-1]))
-
-# Solar wind Velocity Magnitude Space Craft Frame
-wave_properties['|Vsw| sc [km/s]'] = np.sqrt(geometry.dot_product(V_vec, V_vec))
-
-# Magnetic Field Vector
-wave_properties[['Bx [nT]', 'By [nT]', 'Bz [nT]']] = B_vec
-
-# Magnetic Field Magnitude in X-Y
-wave_properties['|B| xy [nT]'] = np.sqrt(geometry.dot_product(B_vec[:, :-1], B_vec[:, :-1]))
-
-# Magnetic Field Magnitude
-wave_properties['|B| [nT]'] = np.sqrt(geometry.dot_product(B_vec, B_vec))
-
-data.save_data(wave_properties, data_path, f"{date}.csv")
+window.close()
