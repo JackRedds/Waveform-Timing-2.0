@@ -16,6 +16,7 @@ taps = 601
 cutoff = [100, 900]
 v1_vec = np.array([1, 0])
 v5_vec = np.array([0, 0, 1])
+angle = 45
 data_path = directory.wave_finder_data_dir
 
 info = data.get_data(start_date, end_date)
@@ -142,8 +143,8 @@ for date in dV1.columns:
     # Magnetic Field Magnitude
     wave_properties['|B| [nT]'] = np.sqrt(geometry.dot_product(B_vec, B_vec))
 
-    wave_properties_within_45 = wave_properties[abs(wave_properties['B-V5 Angle [Deg]']-90) < 45]
+    wave_properties_within_45 = wave_properties[abs(wave_properties['B-V5 Angle [Deg]']-90) < angle]
 
 
     if len(wave_properties_within_45) > 0:
-        data.save_data(wave_properties_within_45, data_path, f"{date}_within_45.csv")
+        data.save_data(wave_properties_within_45, data_path, f"{date}_within_{angle}.csv")
